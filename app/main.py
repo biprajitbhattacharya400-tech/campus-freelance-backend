@@ -3,7 +3,7 @@ from fastapi import FastAPI
 # 👇 ADD THESE
 from app.db.base import Base
 from app.db.session import engine
-from app.models import user  # VERY IMPORTANT
+from app import models  # Registers all models
 
 from app.routes import auth
 from app.routes import user
@@ -13,8 +13,17 @@ from app.routes import application
 from app.routes import chat
 
 
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 👇 ADD THIS (creates tables)
 Base.metadata.create_all(bind=engine)

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -15,16 +16,19 @@ router = APIRouter()
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = create_user(db, user.name, user.email, user.password)
-    return {"message": "User created", "user_id": new_user.id}
-
+    try:
+        new_user = create_user(db, user.name, user.email, user.password)
+        return {"message": "User created", "user_id": new_user.id}
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Email already registered")
 
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = authenticate_user(db, user.email, user.password)
 
     if not db_user:
-        return {"error": "Invalid credentials"}
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token({"user_id": db_user.id})
 
