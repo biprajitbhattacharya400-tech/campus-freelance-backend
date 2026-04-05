@@ -1,4 +1,4 @@
-# 🚀 Campus Freelance Backend
+# 🚀 Campus Freelance
 
 A **full-stack ready backend system** for a campus-based freelancing platform where students can post tasks, apply for work, and collaborate securely.
 
