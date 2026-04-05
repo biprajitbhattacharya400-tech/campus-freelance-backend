@@ -1,147 +1,188 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { registerUser } from '../services/api';
-import { toast } from 'react-toastify';
-import { Briefcase, ArrowRight, Loader, Mail, Lock, User } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, Sparkles, UserRound } from 'lucide-react';
+import { toast } from 'react-toastify';
+import zyloSignature from '../assets/zylo-signature.svg';
+import { AuthContext } from '../context/AuthContext';
+import { registerUser } from '../services/api';
 
 const Register = () => {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setIsError(false);
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
     if (!formData.name || !formData.email || !formData.password) {
       toast.error('Please fill in all fields');
-      setIsError(true);
-      setTimeout(() => setIsError(false), 500);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await registerUser(formData);
-      toast.success('Registration successful! Welcome aboard.');
+      toast.success('Registration successful');
       navigate('/login');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to register');
-      setIsError(true);
-      setTimeout(() => setIsError(false), 500);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decorators */}
-      <div className="absolute top-[10%] right-[10%] w-[30rem] h-[30rem] bg-primary-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob"></div>
-      <div className="absolute bottom-[10%] left-[10%] w-[30rem] h-[30rem] bg-purple-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob" style={{ animationDelay: '2s' }}></div>
+    <div className="page-shell">
+      <div className="auth-grid">
+        <motion.div
+          initial={{ opacity: 0, x: -28 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="auth-copy-panel"
+        >
+          <div className="floating-orb left-[-6rem] top-[20%] h-48 w-48 bg-cyan-300/[0.18]" />
+          <div className="floating-orb bottom-[-4rem] right-[-3rem] h-56 w-56 bg-violet-400/20" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ 
-          opacity: 1, y: 0, scale: 1,
-          x: isError ? [-10, 10, -10, 10, 0] : 0 
-        }}
-        transition={{ duration: 0.5, type: 'spring' }}
-        className="max-w-md w-full glass-card p-10 relative z-10 border-2 border-white/60 shadow-2xl"
-      >
-        <div className="text-center mb-10">
-          <motion.div 
-            whileHover={{ rotate: -180, scale: 1.1 }}
-            transition={{ duration: 0.6, type: "spring" }}
-            className="mx-auto h-20 w-20 bg-gradient-to-tr from-green-500 to-primary-700 text-white rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-primary-500/30"
-          >
-            <Briefcase size={40} strokeWidth={2.5} />
-          </motion.div>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight">
-            Join Platform
-          </h2>
-          <p className="mt-3 text-base font-medium text-gray-500">
-            Already have an account? {' '}
-            <Link to="/login" className="font-bold text-primary-600 hover:text-primary-500 hover:underline transition-all">
-              Sign in securely
-            </Link>
-          </p>
-        </div>
-        
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="floating-group relative">
-            <User className={`absolute left-4 top-[1.25rem] z-10 transition-colors duration-300 ${isError && !formData.name ? 'text-red-500' : 'text-gray-400'}`} size={22} />
-            <input
-              type="text"
-              name="name"
-              required
-              className={`floating-input pl-[3.25rem] ${isError && !formData.name ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 ring-2 ring-red-100' : ''}`}
-              placeholder=" "
-              value={formData.name}
-              onChange={handleChange}
-            />
-            <label className={`floating-label pl-10 ${isError && !formData.name ? 'text-red-500' : ''}`}>Full Name</label>
+          <div className="relative z-10">
+            <div className="badge-chip mb-6">
+              <Sparkles size={14} />
+              Join the campus creator network
+            </div>
+
+            <h1 className="font-display text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
+              Create one account, then move from ideas to shipped work faster.
+            </h1>
+
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/80">
+              Register once to post tasks, apply for gigs, manage applicants, and keep communication connected to real project work.
+            </p>
+
+            <div className="mt-10 space-y-4">
+              {[
+                'Post budget-backed campus tasks in minutes',
+                'Apply to opportunities without long intake forms',
+                'Manage applicants and assignments in one workflow',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3 rounded-[1.3rem] border border-white/10 bg-white/10 px-4 py-4 text-white/85 backdrop-blur-xl">
+                  <div className="h-2.5 w-2.5 rounded-full bg-cyan-300" />
+                  <span className="text-sm leading-6">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
+          className="auth-form-panel"
+        >
+          <div className="mb-8">
+            <img src={zyloSignature} alt="ZYLO" className="brand-logo mb-5 h-9 w-auto" />
+            <p className="section-kicker">Create account</p>
+            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">Get started with ZYLO</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Already registered?{' '}
+              <Link to="/login" className="font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)]">
+                Sign in here
+              </Link>
+            </p>
           </div>
 
-          <div className="floating-group relative">
-            <Mail className={`absolute left-4 top-[1.25rem] z-10 transition-colors duration-300 ${isError && !formData.email ? 'text-red-500' : 'text-gray-400'}`} size={22} />
-            <input
-              type="email"
-              name="email"
-              required
-              className={`floating-input pl-[3.25rem] ${isError && !formData.email ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 ring-2 ring-red-100' : ''}`}
-              placeholder=" "
-              value={formData.email}
-              onChange={handleChange}
-            />
-            <label className={`floating-label pl-10 ${isError && !formData.email ? 'text-red-500' : ''}`}>University Email</label>
-          </div>
-          
-          <div className="floating-group relative">
-            <Lock className={`absolute left-4 top-[1.25rem] z-10 transition-colors duration-300 ${isError && !formData.password ? 'text-red-500' : 'text-gray-400'}`} size={22} />
-            <input
-              type="password"
-              name="password"
-              required
-              className={`floating-input pl-[3.25rem] ${isError && !formData.password ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 ring-2 ring-red-100' : ''}`}
-              placeholder=" "
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <label className={`floating-label pl-10 ${isError && !formData.password ? 'text-red-500' : ''}`}>Create Password</label>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="field-label">Full name</label>
+              <div className="relative">
+                <UserRound className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  name="name"
+                  className="input-shell pl-11"
+                  placeholder="Aarav Sharma"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
 
-          <motion.button
-            whileHover={{ scale: 1.03, boxShadow: "0px 15px 25px rgba(34, 197, 94, 0.4)" }}
-            whileTap={{ scale: 0.95 }}
-            type="submit"
-            disabled={isLoading}
-            className={`w-full btn-premium py-4 mt-6 text-lg font-bold shadow-xl transition-all duration-300 ${isError ? 'bg-gradient-to-r from-red-500 to-pink-500 shadow-red-500/30' : ''}`}
-          >
-            {isLoading ? (
-              <Loader className="animate-spin" size={24} />
-            ) : (
-              <span className="flex items-center justify-center gap-2 w-full">
-                Create Account <ArrowRight size={20} className="stroke-[2.5]" />
-              </span>
-            )}
-          </motion.button>
-          
-          <p className="text-sm font-medium text-center text-gray-400 mt-8">
-            By registering, you agree to our Terms of Service & Privacy Policy.
-          </p>
-        </form>
-      </motion.div>
+            <div>
+              <label className="field-label">Email address</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="email"
+                  name="email"
+                  className="input-shell pl-11"
+                  placeholder="you@campus.edu"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label">Password</label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="input-shell pl-11 pr-11"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="icon-button absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <p className="rounded-[1.2rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400">
+              This refresh focuses on a cleaner frontend experience, so your existing registration flow stays exactly where it belongs.
+            </p>
+
+            <button type="submit" disabled={isLoading} className="btn-dark w-full px-5 py-3.5">
+              {isLoading ? (
+                <>
+                  <LoaderCircle className="animate-spin" size={18} />
+                  Creating account
+                </>
+              ) : (
+                <>
+                  Create account
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+        </motion.div>
+      </div>
     </div>
   );
 };

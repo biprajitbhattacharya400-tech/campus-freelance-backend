@@ -1,42 +1,49 @@
-import React, { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createTask } from '../services/api';
-import { toast } from 'react-toastify';
-import { Send, Loader, ArrowLeft, Briefcase, DollarSign, AlignLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ArrowLeft, BriefcaseBusiness, IndianRupee, LoaderCircle, PenSquare, Send, Sparkles } from 'lucide-react';
+import { toast } from 'react-toastify';
+
+import { AuthContext } from '../context/AuthContext';
+import { createTask } from '../services/api';
 
 const CreateTask = () => {
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     budget: '',
   });
   const [isLoading, setIsLoading] = useState(false);
-  
-  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!user?.is_client) {
+      toast.error('Enable the client role to create tasks');
+      return;
+    }
+
     if (!formData.title || !formData.description || !formData.budget) {
       toast.error('Please fill in all fields');
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      const payload = {
+      await createTask({
         ...formData,
-        budget: parseFloat(formData.budget)
-      };
-      await createTask(payload);
-      toast.success('Task successfully created!');
+        budget: parseFloat(formData.budget),
+      });
+      toast.success('Task created');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to create task');
     } finally {
       setIsLoading(false);
@@ -44,105 +51,150 @@ const CreateTask = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <motion.button 
-        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-        onClick={() => navigate('/dashboard')}
-        className="flex items-center gap-2 text-gray-500 hover:text-primary-600 font-medium mb-8 transition-colors"
-      >
-        <ArrowLeft size={18} />
-        Back to Dashboard
-      </motion.button>
+    <div className="page-shell">
+      <div className="section-shell py-8 sm:py-10">
+        <button type="button" onClick={() => navigate('/dashboard')} className="btn-secondary px-4 py-2.5">
+          <ArrowLeft size={16} />
+          Back
+        </button>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-card bg-white p-8 sm:p-10"
-      >
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Post a New Gig</h1>
-          <p className="text-gray-500 mt-2 text-lg">Detail your request so freelancers can understand your needs.</p>
+        {!user?.is_client ? (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="surface-card mt-6"
+          >
+            <p className="section-kicker">Client role required</p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white sm:text-5xl">
+              Turn on hiring before posting work.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-400 sm:text-base">
+              Open your profile from the navbar and enable "I want to hire" to create tasks on ZYLO.
+            </p>
+          </motion.section>
+        ) : null}
+
+        <div className={`mt-6 grid gap-5 lg:grid-cols-[1fr_360px] ${!user?.is_client ? 'pointer-events-none opacity-45' : ''}`}>
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="surface-card"
+          >
+            <p className="section-kicker">Create task</p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white sm:text-5xl">
+              Post a clean brief.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-400 sm:text-base">
+              Clear title. Clear scope. Clear budget.
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div>
+                <label className="field-label">Title</label>
+                <div className="relative">
+                  <BriefcaseBusiness className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="text"
+                    name="title"
+                    className="input-shell pl-11"
+                    placeholder="Landing page redesign"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">Scope</label>
+                <div className="relative">
+                  <PenSquare className="pointer-events-none absolute left-4 top-5 text-slate-400" size={18} />
+                  <textarea
+                    name="description"
+                    className="textarea-shell pl-11"
+                    placeholder="What needs to be done, deadline, and output."
+                    value={formData.description}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">Budget</label>
+                <div className="relative">
+                  <IndianRupee className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="number"
+                    name="budget"
+                    min="1"
+                    step="0.01"
+                    className="input-shell pl-11"
+                    placeholder="150"
+                    value={formData.budget}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 dark:border-white/10 sm:flex-row">
+                <button type="button" onClick={() => navigate('/dashboard')} className="btn-secondary px-5 py-3">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isLoading} className="btn-primary px-5 py-3">
+                  {isLoading ? (
+                    <>
+                      <LoaderCircle className="animate-spin" size={18} />
+                      Publishing
+                    </>
+                  ) : (
+                    <>
+                      Publish
+                      <Send size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </motion.section>
+
+          <motion.aside
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.06 }}
+            className="surface-card"
+          >
+            <div className="badge-chip">
+              <Sparkles size={14} />
+              Better brief
+            </div>
+            <div className="mt-6 space-y-3">
+              {[
+                'Lead with the outcome',
+                'Keep scope concrete',
+                'Use a real budget',
+              ].map((item) => (
+                <div key={item} className="rounded-[20px] border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200">
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-[22px] bg-slate-950 px-5 py-5 text-white">
+              <div className="text-xs uppercase tracking-[0.22em] text-white/65">Example</div>
+              <p className="mt-3 text-sm leading-6 text-white/85">
+                Need a mobile-first landing page refresh. Delivery in 5 days. Budget: ₹180.
+              </p>
+            </div>
+          </motion.aside>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-700">Gig Title</label>
-            <div className="relative">
-              <Briefcase className="absolute left-4 top-[1.15rem] text-gray-400" size={20} />
-              <input
-                type="text"
-                name="title"
-                required
-                className="input-field pl-11"
-                placeholder="e.g. Need a logo designer for my campus club"
-                value={formData.title}
-                onChange={handleChange}
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1 pl-2">A clear, short title attracts the right talent.</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-700">Detailed Description</label>
-            <div className="relative">
-              <AlignLeft className="absolute left-4 top-4 text-gray-400" size={20} />
-              <textarea
-                name="description"
-                required
-                rows="5"
-                className="input-field pl-11 py-4"
-                placeholder="Describe what you need done, timelines, and specific requirements..."
-                value={formData.description}
-                onChange={handleChange}
-              ></textarea>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-gray-700">Project Budget ($)</label>
-            <div className="relative">
-              <DollarSign className="absolute left-4 top-[1.15rem] text-gray-400" size={20} />
-              <input
-                type="number"
-                name="budget"
-                required
-                min="1"
-                step="0.01"
-                className="input-field pl-11 font-mono"
-                placeholder="50.00"
-                value={formData.budget}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-gray-100 flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard')}
-              className="btn-secondary px-6 py-3"
-            >
-              Cancel
-            </button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={isLoading}
-              className="btn-premium px-8 py-3"
-            >
-              {isLoading ? (
-                <Loader className="animate-spin" size={20} />
-              ) : (
-                <span className="flex items-center gap-2">
-                  Launch Task <Send size={18} />
-                </span>
-              )}
-            </motion.button>
-          </div>
-        </form>
-      </motion.div>
+      </div>
     </div>
   );
 };
 
 export default CreateTask;
+

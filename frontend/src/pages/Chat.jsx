@@ -1,62 +1,60 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getTaskMessages, sendMessage } from '../services/api';
-import { AuthContext } from '../context/AuthContext';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, LoaderCircle, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { Send, ArrowLeft, Loader } from 'lucide-react';
+
+import { AuthContext } from '../context/AuthContext';
+import { getTaskMessages, sendMessage } from '../services/api';
+
+const timeFormatter = new Intl.DateTimeFormat([], {
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 const Chat = () => {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  
   const messagesEndRef = useRef(null);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       const response = await getTaskMessages(taskId);
       setMessages(response.data);
-    } catch (error) {
-      console.error('Failed to load messages');
+    } catch (_error) {
+      toast.error('Failed to load messages');
     } finally {
-      if (loading) setLoading(false);
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchMessages();
-    
-    // Auto refresh every 5 seconds
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
   }, [taskId]);
 
   useEffect(() => {
-    scrollToBottom();
+    fetchMessages();
+    const interval = window.setInterval(fetchMessages, 5000);
+    return () => window.clearInterval(interval);
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSend = async (e) => {
-    e.preventDefault();
+  const handleSend = async (event) => {
+    event.preventDefault();
     if (!newMessage.trim()) return;
-    
+
     setSending(true);
     try {
       await sendMessage({
-        task_id: parseInt(taskId),
-        message: newMessage
+        task_id: parseInt(taskId, 10),
+        message: newMessage.trim(),
       });
       setNewMessage('');
-      fetchMessages();
-    } catch (error) {
+      await fetchMessages();
+    } catch (_error) {
       toast.error('Failed to send message');
     } finally {
       setSending(false);
@@ -65,91 +63,116 @@ const Chat = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-64px)]">
-        <Loader className="animate-spin text-primary-600" size={40} />
+      <div className="page-shell">
+        <div className="section-shell flex min-h-[70vh] items-center justify-center py-8">
+          <div className="surface-card flex min-h-[220px] w-full max-w-2xl flex-col items-center justify-center">
+            <LoaderCircle className="animate-spin text-[var(--brand-600)]" size={28} />
+            <h2 className="mt-5 font-display text-3xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white">Opening chat</h2>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-64px)] flex flex-col">
-      <div className="flex items-center gap-4 mb-4">
-        <button 
-          onClick={() => navigate('/my-tasks')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft size={20} className="text-gray-600" />
+    <div className="page-shell">
+      <div className="section-shell py-8 sm:py-10">
+        <button type="button" onClick={() => navigate('/my-tasks')} className="btn-secondary px-4 py-2.5">
+          <ArrowLeft size={16} />
+          Back
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Task Chat</h1>
-          <p className="text-sm text-gray-500">Communicate securely with your team</p>
-        </div>
-      </div>
 
-      <div className="flex-1 bg-white rounded-t-2xl border border-gray-200 border-b-0 shadow-sm overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gray-50/50">
-          {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              No messages yet. Start the conversation!
-            </div>
-          ) : (
-            messages.map((msg, index) => {
-              const isMine = msg.sender_id === user.id;
-              return (
-                <div 
-                  key={index} 
-                  className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div 
-                    className={`max-w-[75%] px-4 py-2 ${
-                      isMine 
-                        ? 'bg-primary-600 text-white rounded-l-2xl rounded-tr-2xl' 
-                        : 'bg-white border border-gray-200 text-gray-800 rounded-r-2xl rounded-tl-2xl'
-                    } shadow-sm`}
-                  >
-                    {!isMine && (
-                      <div className="text-xs text-gray-500 mb-1 font-medium">
-                        User {msg.sender_id}
-                      </div>
-                    )}
-                    <p className="text-sm sm:text-base break-words">{msg.message}</p>
-                    <div className={`text-[10px] mt-1 text-right ${isMine ? 'text-primary-100' : 'text-gray-400'}`}>
-                      {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </div>
-                  </div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-[300px_1fr]">
+          <aside className="surface-card">
+            <p className="section-kicker">Task chat</p>
+            <h1 className="mt-3 font-display text-3xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white">
+              Stay in context.
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-400">
+              Messages stay attached to task #{taskId}.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {['Auto refresh', 'Shared thread', 'Clean handoff'].map((item) => (
+                <div key={item} className="rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200">
+                  {item}
                 </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
+              ))}
+            </div>
+          </aside>
+
+          <section className="surface-card flex min-h-[70vh] flex-col p-0">
+            <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10 sm:px-6">
+              <p className="section-kicker">Conversation</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-slate-950 dark:text-white">Shared workspace</h2>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 px-5 py-6 dark:bg-slate-950/30 sm:px-6">
+              {messages.length > 0 ? (
+                messages.map((message, index) => {
+                  const isMine = message.sender_id === user?.id;
+
+                  return (
+                    <div key={`${message.sender_id}-${message.timestamp}-${index}`} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[85%] rounded-[20px] px-4 py-3 shadow-sm ${
+                          isMine ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-900 dark:text-white'
+                        }`}
+                      >
+                        {!isMine ? (
+                          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                            User #{message.sender_id}
+                          </div>
+                        ) : null}
+                        <p className="text-sm leading-6">{message.message}</p>
+                        <div className={`mt-2 text-right text-[11px] ${isMine ? 'text-white/50' : 'text-slate-400'}`}>
+                          {timeFormatter.format(new Date(message.timestamp))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex h-full min-h-[320px] items-center justify-center text-center text-sm text-slate-500 dark:text-slate-400">
+                  No messages yet.
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <form onSubmit={handleSend} className="border-t border-slate-200 bg-white px-5 py-5 dark:border-white/10 dark:bg-slate-950/50 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <textarea
+                  rows={2}
+                  className="textarea-shell min-h-[90px] flex-1"
+                  placeholder="Write a message"
+                  value={newMessage}
+                  onChange={(event) => setNewMessage(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      handleSend(event);
+                    }
+                  }}
+                />
+                <button type="submit" disabled={sending || !newMessage.trim()} className="btn-primary px-5 py-3 sm:self-end">
+                  {sending ? (
+                    <>
+                      <LoaderCircle className="animate-spin" size={18} />
+                      Sending
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      Send
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
       </div>
-
-      <form 
-        onSubmit={handleSend}
-        className="bg-white p-4 rounded-b-2xl border border-gray-200 shadow-sm flex items-end gap-2"
-      >
-        <textarea
-          rows={1}
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 resize-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all max-h-32"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSend(e);
-            }
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim() || sending}
-          className="p-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-        >
-          {sending ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
-        </button>
-      </form>
     </div>
   );
 };

@@ -1,138 +1,175 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { loginUser, getUserMe } from '../services/api';
-import { setToken } from '../utils/auth';
-import { AuthContext } from '../context/AuthContext';
+import React, { useContext, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { Briefcase, ArrowRight, Loader, Mail, Lock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import zyloSignature from '../assets/zylo-signature.svg';
+import { AuthContext } from '../context/AuthContext';
+import { getUserMe, loginUser } from '../services/api';
+import { setToken } from '../utils/auth';
 
 const Login = () => {
+  const { user, setUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  
-  const { setUser } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
     if (!email || !password) {
       toast.error('Please fill in all fields');
-      setIsError(true);
-      setTimeout(() => setIsError(false), 500);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const response = await loginUser({ email, password });
       setToken(response.data.access_token);
-      
-      const userRes = await getUserMe();
-      setUser(userRes.data);
-      
-      toast.success('Welcome back!');
+
+      const userResponse = await getUserMe();
+      setUser(userResponse.data);
+      toast.success('Welcome back');
       navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to login');
-      setIsError(true);
-      setTimeout(() => setIsError(false), 500);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decorators */}
-      <div className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-primary-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob"></div>
-      <div className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-purple-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob" style={{ animationDelay: '2s' }}></div>
-      <div className="absolute bottom-[-20%] left-[20%] w-[30rem] h-[30rem] bg-blue-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob" style={{ animationDelay: '4s' }}></div>
+    <div className="page-shell">
+      <div className="auth-grid">
+        <motion.div
+          initial={{ opacity: 0, x: -28 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="auth-copy-panel"
+        >
+          <div className="floating-orb left-[-5rem] top-[-4rem] h-40 w-40 bg-cyan-300/[0.24]" />
+          <div className="floating-orb bottom-[-4rem] right-[-2rem] h-48 w-48 bg-fuchsia-400/[0.18]" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ 
-          opacity: 1, y: 0, scale: 1,
-          x: isError ? [-10, 10, -10, 10, 0] : 0 
-        }}
-        transition={{ duration: 0.5, type: 'spring' }}
-        className="max-w-md w-full glass-card p-10 relative z-10 border-2 border-white/60 shadow-2xl"
-      >
-        <div className="text-center mb-10">
-          <motion.div 
-            whileHover={{ rotate: 180, scale: 1.1 }}
-            transition={{ duration: 0.6, type: "spring" }}
-            className="mx-auto h-20 w-20 bg-gradient-to-tr from-primary-600 to-blue-500 text-white rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-primary-500/30"
-          >
-            <Briefcase size={40} strokeWidth={2.5} />
-          </motion.div>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight">
-            Welcome Back
-          </h2>
-          <p className="mt-3 text-base text-gray-500 font-medium">
-            Don't have an account? {' '}
-            <Link to="/register" className="font-bold text-primary-600 hover:text-primary-500 hover:underline transition-all">
-              Sign up for free
-            </Link>
-          </p>
-        </div>
-        
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="floating-group relative">
-            <Mail className={`absolute left-4 top-[1.25rem] z-10 transition-colors duration-300 ${isError ? 'text-red-500' : 'text-gray-400'}`} size={22} />
-            <input
-              type="email"
-              required
-              className={`floating-input pl-[3.25rem] ${isError ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 ring-2 ring-red-100' : ''}`}
-              placeholder=" "
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setIsError(false); }}
-            />
-            <label className={`floating-label pl-10 ${isError ? 'text-red-500' : ''}`}>Email Address</label>
-          </div>
-          
-          <div className="floating-group relative">
-            <Lock className={`absolute left-4 top-[1.25rem] z-10 transition-colors duration-300 ${isError ? 'text-red-500' : 'text-gray-400'}`} size={22} />
-            <input
-              type="password"
-              required
-              className={`floating-input pl-[3.25rem] ${isError ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 ring-2 ring-red-100' : ''}`}
-              placeholder=" "
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setIsError(false); }}
-            />
-            <label className={`floating-label pl-10 ${isError ? 'text-red-500' : ''}`}>Password</label>
-          </div>
-
-          <div className="flex items-center justify-between mt-2 mb-8">
-            <div className="flex items-center group cursor-pointer">
-              <input id="remember-me" name="remember-me" type="checkbox" className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer transition-colors" />
-              <label htmlFor="remember-me" className="ml-3 block text-sm font-medium text-gray-700 cursor-pointer group-hover:text-gray-900 transition-colors">Remember me</label>
+          <div className="relative z-10">
+            <div className="badge-chip mb-6">
+              <Sparkles size={14} />
+              Sign back into your workspace
             </div>
-            <div className="text-sm">
-              <a href="#" className="font-bold text-primary-600 hover:text-primary-500 hover:underline transition-all">Forgot password?</a>
+
+            <h1 className="font-display text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
+              Keep every campus project moving in one place.
+            </h1>
+
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/80">
+              Log in to browse fresh gigs, manage your posted tasks, assign collaborators, and continue project chats without losing context.
+            </p>
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {[
+                ['Task board', 'Browse active campus work'],
+                ['Secure session', 'Token-based auth already wired'],
+                ['Project chat', 'Keep messages tied to each task'],
+                ['Owner controls', 'Assign applicants with less friction'],
+              ].map(([title, copy]) => (
+                <div key={title} className="rounded-[1.5rem] border border-white/10 bg-white/10 p-5 backdrop-blur-xl">
+                  <div className="flex items-center gap-3 text-white">
+                    <ShieldCheck size={18} className="text-cyan-300" />
+                    <span className="font-semibold">{title}</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-white/80">{copy}</p>
+                </div>
+              ))}
             </div>
           </div>
+        </motion.div>
 
-          <motion.button
-            whileHover={{ scale: 1.03, boxShadow: "0px 15px 25px rgba(34, 197, 94, 0.4)" }}
-            whileTap={{ scale: 0.95 }}
-            type="submit"
-            disabled={isLoading}
-            className={`w-full btn-premium py-4 text-lg font-bold shadow-xl transition-all duration-300 ${isError ? 'bg-gradient-to-r from-red-500 to-pink-500 shadow-red-500/30' : ''}`}
-          >
-            {isLoading ? (
-              <Loader className="animate-spin" size={24} />
-            ) : (
-              <span className="flex items-center justify-center gap-2 w-full">
-                Sign In to Platform <ArrowRight size={20} className="stroke-[2.5]" />
-              </span>
-            )}
-          </motion.button>
-        </form>
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
+          className="auth-form-panel"
+        >
+          <div className="mb-8">
+            <img src={zyloSignature} alt="ZYLO" className="brand-logo mb-5 h-9 w-auto" />
+            <p className="section-kicker">Welcome back</p>
+            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">Sign in to ZYLO</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              New here?{' '}
+              <Link to="/register" className="font-semibold text-[var(--brand-600)] hover:text-[var(--brand-700)]">
+                Create an account
+              </Link>
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="field-label">Email address</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="email"
+                  className="input-shell pl-11"
+                  placeholder="you@campus.edu"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label">Password</label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="input-shell pl-11 pr-11"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="icon-button absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <label className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-600)] focus:ring-sky-200" />
+                Remember me
+              </label>
+              <span className="text-slate-400 dark:text-slate-500">Secure access enabled</span>
+            </div>
+
+            <button type="submit" disabled={isLoading} className="btn-dark w-full px-5 py-3.5">
+              {isLoading ? (
+                <>
+                  <LoaderCircle className="animate-spin" size={18} />
+                  Signing in
+                </>
+              ) : (
+                <>
+                  Continue to dashboard
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+        </motion.div>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken, removeToken } from '../utils/auth';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -36,6 +36,14 @@ api.interceptors.response.use(
 export const registerUser = (data) => api.post('/auth/register', data);
 export const loginUser = (data) => api.post('/auth/login', data);
 export const getUserMe = () => api.get('/user/me');
+export const getUserProfile = () => api.get('/user/profile');
+export const updateUserProfile = (data) => api.put('/user/profile', data);
+export const updateUserRole = (data) => api.put('/user/role', data);
+export const uploadUserAvatar = (file) => {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return api.post('/user/profile/avatar', formData);
+};
 
 // Tasks endpoints
 export const getTasks = () => api.get('/tasks/');
